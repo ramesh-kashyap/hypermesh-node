@@ -4,12 +4,8 @@ const AuthController = require("../controllers/AuthController");
 const IncomeController = require("../controllers/incomeController");
 const TelegramController = require("../controllers/TelegramController");
 const DashboardController = require("../controllers/DashboardController");
-
 const authMiddleware = require("../middleware/authMiddleware"); // JWT Auth Middleware
-
 const passport = require('passport');
-
-
 const googleController = require('../controllers/googleController');
 const teamController = require('../controllers/teamController');
 
