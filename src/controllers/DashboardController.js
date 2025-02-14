@@ -127,40 +127,25 @@ const getUserDetails = async (req, res) => {
     }
 };
 
-
 const getAvailableBalance = async (req, res) => {
-    try {
-        const user = req.user; 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" , status: false});
-        }
-        const userId = user.id; // Authenticated User ID
-  
-// console.log(user);
+  try {
+    const user = req.user; 
+    const userId = user.id; // Authenticated User ID
 
-      // ✅ Users Income
-      const totalIncome = await Income.sum("comm");
-  
+    // ✅ Users Income
+    const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
 
-    //   console.log(totalIncome);
-      const totalWithdraw = await Withdraw.sum("amount");
-    
-  
-      // ✅ Available Balance Calculation
-      const balance = (totalIncome || 0) - (totalWithdraw || 0);
+    // ✅ Withdraw Amount
+    const totalWithdraw = await Withdraw.sum("amount", { where: { user_id: userId } });
 
-      const withdraw  = await  Withdraw.sum("amount", { where: {  status: { [Op.ne]: "Failed" }
-        }
-    }); 
+    // ✅ Available Balance Calculation
+    const balance = (totalIncome || 0) - (totalWithdraw || 0);
 
+    res.json({ available_balance: balance });
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
-      res.json({ available_balance: balance ,withdraw :withdraw,totalIncome: totalIncome});
-    } catch (error) {
-      console.error("Error fetching balance:", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
-
-
-
-module.exports = { getUserDetails ,getAvailableBalance};
+module.exports = { getUserDetails,sendCode,resetPassword };
