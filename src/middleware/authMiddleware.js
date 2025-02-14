@@ -4,7 +4,7 @@ const {User} = require("../models");
 const authMiddleware = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(" ")[1]; // "Bearer TOKEN"
-        
+        console.log('raju');
         if (!token) {
             return res.status(200).json({ error: "Unauthorized: Token missing" , redirect: true });
         }
@@ -13,6 +13,7 @@ const authMiddleware = async (req, res, next) => {
         // User Fetch Karna
         // console.log(decoded);
         const user = await User.findByPk(decoded.userId);
+        console.log(user);
 
         if (!user) {
             return res.status(200).json({ error: "Unauthorized: User not found", redirect: true });
