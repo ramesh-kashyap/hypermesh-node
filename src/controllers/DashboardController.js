@@ -1,5 +1,7 @@
 const { User } = require("../models"); // Import User model
 const { Income, Withdraw } = require("../models");
+const { Op } = require("sequelize");
+
 const getUserDetails = async (req, res) => {
     try {
         // ✅ Get logged-in user details from `req.user` (set by `authMiddleware`)
@@ -30,19 +32,31 @@ const getUserDetails = async (req, res) => {
 
 const getAvailableBalance = async (req, res) => {
     try {
-      const user = req.user; 
-      const userId = user.id; // Authenticated User ID
+        const user = req.user; 
+        if (!user) {
+            return res.status(404).json({ error: "User not found" , status: false});
+        }
+        const userId = user.id; // Authenticated User ID
   
+// console.log(user);
+
       // ✅ Users Income
-      const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
+      const totalIncome = await Income.sum("comm");
   
-      // ✅ Withdraw Amount
-      const totalWithdraw = await Withdraw.sum("amount", { where: { user_id: userId } });
+
+    //   console.log(totalIncome);
+      const totalWithdraw = await Withdraw.sum("amount");
+    
   
       // ✅ Available Balance Calculation
       const balance = (totalIncome || 0) - (totalWithdraw || 0);
-  
-      res.json({ available_balance: balance });
+
+      const withdraw  = await  Withdraw.sum("amount", { where: {  status: { [Op.ne]: "Failed" }
+        }
+    }); 
+
+
+      res.json({ available_balance: balance ,withdraw :withdraw,totalIncome: totalIncome});
     } catch (error) {
       console.error("Error fetching balance:", error);
       res.status(500).json({ error: "Internal Server Error" });
