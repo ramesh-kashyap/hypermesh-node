@@ -1,5 +1,5 @@
 const { User } = require("../models"); // Import User model
-
+const { Income, Withdraw } = require("../models");
 const getUserDetails = async (req, res) => {
     try {
         // ✅ Get logged-in user details from `req.user` (set by `authMiddleware`)
@@ -27,4 +27,28 @@ const getUserDetails = async (req, res) => {
     }
 };
 
-module.exports = { getUserDetails };
+
+const getAvailableBalance = async (req, res) => {
+    try {
+      const user = req.user; 
+      const userId = user.id; // Authenticated User ID
+  
+      // ✅ Users Income
+      const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
+  
+      // ✅ Withdraw Amount
+      const totalWithdraw = await Withdraw.sum("amount", { where: { user_id: userId } });
+  
+      // ✅ Available Balance Calculation
+      const balance = (totalIncome || 0) - (totalWithdraw || 0);
+  
+      res.json({ available_balance: balance });
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+
+
+module.exports = { getUserDetails ,getAvailableBalance};
