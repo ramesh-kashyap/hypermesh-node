@@ -132,6 +132,7 @@ const resetPassword = async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 };
+const { Op } = require("sequelize");
 
 const getUserDetails = async (req, res) => {
     try {
