@@ -1,6 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/connectDB");
 
+
 const Income = sequelize.define(
   "Income",
   {
