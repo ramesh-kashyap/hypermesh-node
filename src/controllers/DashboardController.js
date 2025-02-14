@@ -30,7 +30,8 @@ const getUserDetails = async (req, res) => {
 
 const getAvailableBalance = async (req, res) => {
     try {
-      const userId = req.user.id; // Authenticated User ID
+      const user = req.user; 
+      const userId = user.id; // Authenticated User ID
   
       // ✅ Users Income
       const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
