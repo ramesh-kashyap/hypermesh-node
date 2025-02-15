@@ -17,6 +17,7 @@ const generateUsername = () => {
 };
 
 
+
 async function verifyGoogleToken(req, res) {
   try {
       const { token } = req.body;

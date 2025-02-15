@@ -17,6 +17,7 @@ const teamController = require('../controllers/teamController');
 
 router.post('/google', googleController.verifyGoogleToken);
 router.post('/register', AuthController.register);
+router.post('/login', AuthController.login);
 router.get("/direct-income", authMiddleware, IncomeController.getDirectIncome);
 router.get("/level-income", authMiddleware, IncomeController.getLevelIncome);
 router.get("/Roi-income", authMiddleware, IncomeController.getRoiIncome);
