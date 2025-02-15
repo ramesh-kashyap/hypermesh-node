@@ -5,15 +5,19 @@ const authMiddleware = async (req, res, next) => {
     try {
         const token = req.headers.authorization?.split(" ")[1]; // "Bearer TOKEN"
         
+        // console.log(token);
+        
         if (!token) {
             return res.status(200).json({ error: "Unauthorized: Token missing" , redirect: true });
         }
         // Token Verify Karna
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // User Fetch Karna
-        // console.log(decoded);
-        const user = await User.findByPk(decoded.userId);
+        // User Fetch Karn
+          let userId = Object.keys(decoded).includes("id")?decoded.id:decoded.userId;
+          const user = await User.findByPk(userId);
 
+
+    
         if (!user) {
             return res.status(200).json({ error: "Unauthorized: User not found", redirect: true });
         }
