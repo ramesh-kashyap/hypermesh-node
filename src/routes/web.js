@@ -21,7 +21,8 @@ router.get('/list', authMiddleware, teamController.listUsers);
 router.get("/userinfo", authMiddleware, DashboardController.getUserDetails);
 router.get('/profile', authMiddleware, AuthController.getUserProfile);
 router.put('/Update-Profile', authMiddleware, AuthController.updateUserProfile);
-
+router.post('/send-code', DashboardController.sendCode);
+router.post('/reset-password',  DashboardController.resetPassword);
 
 
 // telegram api 
