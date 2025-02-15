@@ -73,22 +73,8 @@ const myLevelTeamCount2 = async (userId, level = 3) => {
 
 const getTeam = async (req, res) => {
     try {
-        const {token} = req.body;
-        if (!token || typeof token !== "string") {
-            return res.status(200).json({ error: "Unauthorized: Invalid token" });
-        }
-
-        // Remove "Bearer " prefix if present
-        if (token.startsWith("Bearer ")) {
-            token = token.slice(7, token.length);
-        }
-        const secretKey = process.env.JWT_SECRET || "default_secret_key"; // Use environment variable or fallback
-
-        const decoded = jwt.verify(token, secretKey); // Verify token
-        const userId = decoded.userId;
-
-         
-        
+        const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
+         const userId = user.id;
 
         if (!userId || !userId) {
             return res.status(200).json({ error: "Unauthorized: User not found" });
@@ -184,20 +170,18 @@ const getTeam = async (req, res) => {
 const listUsers = async (req, res) => {
     try {
        
+        const { selected_level, limit, page, search } = req.query;
         const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used)
-        const limit = req.query.limit ? parseInt(req.query.limit) : 6;
-        const selectedLevel = req.query.selected_level ? parseInt(req.query.selected_level) : 0;
-        const search = req.query.search || null;
-
         // 🔹 Fetch user's level team
         const myLevelTeam = await myLevelTeamCount2(user.id);
 
         let genTeam = {};
-        if (selectedLevel > 0) {
-            genTeam = myLevelTeam[selectedLevel] || [];
+        if (selected_level > 0) {
+            genTeam = myLevelTeam[selected_level] || [];
         } else {
             genTeam = myLevelTeam;
         }
+console.log(selected_level);
 
         // 🔹 Query to get users
         let whereCondition = {

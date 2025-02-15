@@ -67,11 +67,35 @@ const User = sequelize.define('User', {
     package: {
         type: DataTypes.STRING,
         allowNull: true,
-    }
+    },
+    PSR: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    TPSR: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    level: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    tpassword: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    ParentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+  
 }, {
     tableName: 'users',
     timestamps: false, // Enable createdAt and updatedAt fields
 });
+
+
+
 
 
 
