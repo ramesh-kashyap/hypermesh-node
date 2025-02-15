@@ -316,11 +316,57 @@ const loginWithTelegram = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error("❌ Error:", error);
+        console.error("Error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
 
 
-module.exports = { login, register, logout,loginWithTelegram };
+const getUserProfile = async (req, res) => {
+    try {
+        console.log("Fetching User Profile...");
+
+        const user = await User.findOne({
+            attributes: ['id', 'name', 'email'],
+            where: { id: req.user.id }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user); 
+    } catch (error) {
+        console.error("Error fetching user:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const updateUserProfile = async (req, res) => {
+    try {
+        console.log("🔍 Fetching user profile for update...");
+
+        const userId = req.user.id; 
+
+        const { name } = req.body; 
+
+        if (!name) {
+            return res.status(400).json({ message: "Name is required" });
+        }
+
+        // ✅ User ka name update karein
+        const [updatedRows] = await User.update({ name }, { where: { id: userId } });
+
+        if (updatedRows === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ message: "Profile updated successfully", name });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+module.exports = { login, register, logout,loginWithTelegram,getUserProfile,updateUserProfile};
 
