@@ -1,4 +1,4 @@
-const { User } = require("../models"); // Import User model
+const { User, Investment } = require("../models"); // Import User model
 const { Income, Withdraw } = require("../models");
 const nodemailer = require("nodemailer");
 const { Op } = require('sequelize'); // ✅ Import Sequelize Operators
@@ -133,6 +133,7 @@ const getAvailableBalance = async (req, res) => {
 
     // ✅ Users Income
     const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
+    const totalInvestment = await Investment.sum("amount", { where: { user_id: userId } });
 
     // ✅ Withdraw Amount
     const totalWithdraw = await Withdraw.sum("amount", { where: { user_id: userId } });
@@ -140,7 +141,7 @@ const getAvailableBalance = async (req, res) => {
     // ✅ Available Balance Calculation
     const balance = (totalIncome || 0) - (totalWithdraw || 0);
 
-    res.json({ available_balance: balance });
+    res.json({ available_balance: balance,withdraw:totalWithdraw,totlinvest:totalInvestment });
   } catch (error) {
     console.error("Error fetching balance:", error);
     res.status(500).json({ error: "Internal Server Error" });
