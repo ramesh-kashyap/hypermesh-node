@@ -148,4 +148,4 @@ const getAvailableBalance = async (req, res) => {
   }
 };
 
-module.exports = { getUserDetails,sendCode,resetPassword };
+module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance };
