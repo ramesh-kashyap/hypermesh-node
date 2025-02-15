@@ -346,30 +346,23 @@ const updateUserProfile = async (req, res) => {
     try {
         console.log("🔍 Fetching user profile for update...");
 
-        const userId = req.user.id; // ✅ Login User ka ID
-        console.log("✅ User ID:", userId);
+        const userId = req.user.id; 
 
-        const { name } = req.body; // ✅ Naya Name
-        console.log("📝 New Name Received:", name);
+        const { name } = req.body; 
 
         if (!name) {
-            console.log("❌ Name is missing in request body");
             return res.status(400).json({ message: "Name is required" });
         }
 
         // ✅ User ka name update karein
-        console.log("⚡ Updating user name in database...");
         const [updatedRows] = await User.update({ name }, { where: { id: userId } });
 
         if (updatedRows === 0) {
-            console.log("❌ User not found for ID:", userId);
             return res.status(404).json({ message: "User not found" });
         }
 
-        console.log("✅ Profile updated successfully for User ID:", userId);
         res.json({ message: "Profile updated successfully", name });
     } catch (error) {
-        console.error("❌ Error updating user profile:", error.message);
         res.status(500).json({ error: error.message });
     }
 };
