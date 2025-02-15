@@ -1,7 +1,6 @@
 const { User } = require("../models"); // Import User model
 const { Income, Withdraw } = require("../models");
 const nodemailer = require("nodemailer");
-const User = require("../models/User");
 const { Op } = require('sequelize'); // ✅ Import Sequelize Operators
 
 

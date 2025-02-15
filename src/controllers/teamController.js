@@ -73,22 +73,8 @@ const myLevelTeamCount2 = async (userId, level = 3) => {
 
 const getTeam = async (req, res) => {
     try {
-        const {token} = req.body;
-        if (!token || typeof token !== "string") {
-            return res.status(200).json({ error: "Unauthorized: Invalid token" });
-        }
-
-        // Remove "Bearer " prefix if present
-        if (token.startsWith("Bearer ")) {
-            token = token.slice(7, token.length);
-        }
-        const secretKey = process.env.JWT_SECRET || "default_secret_key"; // Use environment variable or fallback
-
-        const decoded = jwt.verify(token, secretKey); // Verify token
-        const userId = decoded.userId;
-
-         
-        
+        const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
+         const userId = user.id;
 
         if (!userId || !userId) {
             return res.status(200).json({ error: "Unauthorized: User not found" });
