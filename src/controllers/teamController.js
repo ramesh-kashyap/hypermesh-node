@@ -184,20 +184,18 @@ const getTeam = async (req, res) => {
 const listUsers = async (req, res) => {
     try {
        
+        const { selected_level, limit, page, search } = req.query;
         const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used)
-        const limit = req.query.limit ? parseInt(req.query.limit) : 6;
-        const selectedLevel = req.query.selected_level ? parseInt(req.query.selected_level) : 0;
-        const search = req.query.search || null;
-
         // 🔹 Fetch user's level team
         const myLevelTeam = await myLevelTeamCount2(user.id);
 
         let genTeam = {};
-        if (selectedLevel > 0) {
-            genTeam = myLevelTeam[selectedLevel] || [];
+        if (selected_level > 0) {
+            genTeam = myLevelTeam[selected_level] || [];
         } else {
             genTeam = myLevelTeam;
         }
+console.log(selected_level);
 
         // 🔹 Query to get users
         let whereCondition = {
