@@ -32,6 +32,7 @@ router.post("/connect-telegram", authMiddleware, DashboardController.connectTele
 router.get("/deposit-History", authMiddleware, InvestController.getHistory);
 router.post("/recharge", authMiddleware, InvestController.generateWallet);
 router.get("/telegram-history", authMiddleware, TelegramController.getTelegramHistory);
+router.post("/generate-wallet", authMiddleware, InvestController.generateWallet);
 
 
 
