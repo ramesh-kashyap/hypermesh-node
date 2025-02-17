@@ -69,46 +69,39 @@ const sendCode = async (req, res) => {
 const resetPassword = async (req, res) => {
     try {
         const { email, code, PSR } = req.body;
-        console.log("Received Request for Reset Password");
 
-        // ✅ Check if the verification code is valid and not expired
+       
         const user = await User.findOne({
             where: {
                 email,
                 verification_code: code,
-                code_expires_at: { [Op.gt]: new Date() } // Code expiry check
+                code_expires_at: { [Op.gt]: new Date() } 
             }
         });
 
         if (!user) {
-            console.log("Invalid or expired verification code for:", email);
             return res.status(400).json({ message: 'Invalid or expired code' });
         }
 
-        console.log("User Found:", user.email);
 
-        // ✅ Update the password and reset the verification code
         await user.update({ PSR, verification_code: null, code_expires_at: null });
-        console.log("Password updated successfully for:", email);
 
         return res.json({ message: 'Password updated successfully' });
 
     } catch (error) {
         console.error("Error in resetPassword function:", error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 const getUserDetails = async (req, res) => {
     try {
-        // ✅ Get logged-in user details from `req.user` (set by `authMiddleware`)
         const user = req.user; 
 
         if (!user) {
             return res.status(404).json({ error: "User not found" , status: false});
         }
 
-        // ✅ Return only necessary fields
         return res.status(200).json({
             id: user.id,
             username: user.username,
