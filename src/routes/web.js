@@ -8,7 +8,7 @@ const authMiddleware = require("../middleware/authMiddleware"); // JWT Auth Midd
 const passport = require('passport');
 const googleController = require('../controllers/googleController');
 const teamController = require('../controllers/teamController');
-
+const createWithdrawal = require("../controllers/withdrawController");
 
 
 router.post('/google', googleController.verifyGoogleToken);
@@ -25,7 +25,9 @@ router.put('/Update-Profile', authMiddleware, AuthController.updateUserProfile);
 router.post('/send-code', DashboardController.sendCode);
 router.post('/reset-password',  DashboardController.resetPassword);
 router.get("/available-balance", authMiddleware, DashboardController.getAvailableBalance);
-
+router.post("/withdrawal",authMiddleware, createWithdrawal.withdrawRequest);
+router.get("/withdraws", authMiddleware, createWithdrawal.getUserWithdraws);
+router.get("/usdt-address", authMiddleware, createWithdrawal.getUserUsdtAddress);
 
 
 
