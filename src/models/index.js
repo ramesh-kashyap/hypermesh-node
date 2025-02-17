@@ -3,6 +3,8 @@ const User = require('./User');
 const Investment = require('./Investment');
 const Withdraw = require('./Withdraw');
 const Income = require('./Income');
+// const TelegramUser = require('./TelegramUser');
+
 const WalletModel = require('./WalletModel');
 
 // Define relationships
@@ -16,6 +18,10 @@ User.hasMany(Income, { foreignKey: 'user_id_fk' });
 Income.belongsTo(User, { foreignKey: 'user_id_fk' });
 WalletModel.belongsTo(User, { foreignKey: 'user_id' });
 
+
+
+// User.hasMany(TelegramUser, { foreignKey: 'user_id_fk' });
+// TelegramUser.belongsTo(User, { foreignKey: 'user_id_fk' });
 
 
 // Sync models

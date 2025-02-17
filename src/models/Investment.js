@@ -12,7 +12,8 @@ const Investment = sequelize.define('Investment', {
     }
 }, {
     tableName: 'investments',
-    timestamps: false
+    timestamps: false // No automatic created_at/updated_at
 });
+
 
 module.exports = Investment;

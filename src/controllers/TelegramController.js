@@ -53,4 +53,39 @@ const getUserByTelegramId = async (req, res) => {
     }
 };
 
-module.exports = { getUserByTelegramId };
+
+
+
+
+const getTelegramHistory = async (req, res) => {
+    try {
+      
+        const telegramUsers = await sequelize.query(
+            `SELECT tu.* FROM telegram_users tu 
+             INNER JOIN users u ON tu.telegram_id = u.telegram_id`,
+            {
+                type: QueryTypes.SELECT  
+            }
+        );
+
+        // If no data found
+        if (telegramUsers.length === 0) {
+            return res.status(404).json({
+                message: "No matching telegram users found",
+                status: false,
+                timeStamp: new Date(),
+            });
+        }
+
+        console.log("Filtered Telegram Users Data:", telegramUsers);
+
+        res.json({ success: true, data: telegramUsers });
+    } catch (error) {
+        console.error("Error fetching filtered telegram users:", error.message, error.stack);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+module.exports = { getUserByTelegramId,getTelegramHistory };
