@@ -8,6 +8,8 @@ const authMiddleware = require("../middleware/authMiddleware"); // JWT Auth Midd
 const passport = require('passport');
 const googleController = require('../controllers/googleController');
 const teamController = require('../controllers/teamController');
+const InvestController = require('../controllers/InvestController');
+
 
 
 
@@ -25,6 +27,8 @@ router.put('/Update-Profile', authMiddleware, AuthController.updateUserProfile);
 router.post('/send-code', DashboardController.sendCode);
 router.post('/reset-password',  DashboardController.resetPassword);
 router.get("/available-balance", authMiddleware, DashboardController.getAvailableBalance);
+router.get("/deposit-History", authMiddleware, InvestController.getHistory);
+
 
 
 
