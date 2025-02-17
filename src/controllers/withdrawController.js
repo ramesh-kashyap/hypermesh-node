@@ -5,7 +5,7 @@ const withdrawRequest = async (req, res) => {
     try {
         const { amount,payment_mode, address } = req.body;
 
-        if (!amount || amount <= 0) {
+        if (!amount || amount < 50) {
             return res.status(400).json({ error: "Invalid amount. Please enter a valid amount." });
         }
 
@@ -21,11 +21,14 @@ const withdrawRequest = async (req, res) => {
             return res.status(401).json({ error: "User authentication failed. Please login again." });
         }
 
+        const deduction = amount * 0.05; 
+        const finalAmount = amount - deduction; 
+
         const withdraw = await Withdraw.create({
             user_id: req.user.id,
             user_id_fk: req.user.username,  
             payment_mode, 
-            amount,
+            amount: finalAmount,  // 🔹 Save after deduction
             address,
             status: "pending",
             wdate: new Date().toISOString().split("T")[0], 
@@ -44,19 +47,31 @@ const withdrawRequest = async (req, res) => {
 
 const getUserWithdraws = async (req, res) => {
     try {
-        const userId = req.user.id; 
+        const userId = req.user.id;
+        const { page = 1, limit = 5 } = req.query;  // Default page 1 & limit 10
 
-        const withdraws = await Withdraw.findAll({
+        const offset = (page - 1) * limit;
+
+        const { count, rows } = await Withdraw.findAndCountAll({
             where: { user_id: userId },
-            attributes: ["created_at", "amount"]
+            attributes: ["created_at", "amount"],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [["created_at", "DESC"]] // Newest first
         });
 
-        res.json(withdraws);
+        res.json({
+            withdraws: rows,
+            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+        });
+
     } catch (error) {
         console.error("Error fetching withdraws:", error);
         res.status(500).json({ message: "Server error" });
     }
 };
+
 
 const getUserUsdtAddress = async (req, res) => {
     try {
