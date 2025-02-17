@@ -19,7 +19,7 @@ const register = async (req, res) => {
         // Validate required fields
         if (!fullName || !email || !password || !repeatPassword) {
             return res.status(200).json({
-                message: "All fields are required!",
+                message: "All2 fields are required!",
                 status: false
             });
         }
@@ -323,7 +323,7 @@ const loginWithTelegram = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
     try {
-        console.log("Fetching User Profile...");
+        
 
         const user = await User.findOne({
             attributes: ['id', 'name', 'email'],
@@ -344,8 +344,7 @@ const getUserProfile = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
     try {
-        console.log("🔍 Fetching user profile for update...");
-
+        
         const userId = req.user.id; 
 
         const { name } = req.body; 

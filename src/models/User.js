@@ -48,6 +48,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    usdtTrc20: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    usdtBep20: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     PSR: {
         type: DataTypes.STRING,
         allowNull: true,
