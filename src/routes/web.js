@@ -9,6 +9,9 @@ const passport = require('passport');
 const googleController = require('../controllers/googleController');
 const teamController = require('../controllers/teamController');
 const createWithdrawal = require("../controllers/withdrawController");
+const InvestController = require('../controllers/InvestController');
+
+
 
 
 router.post('/google', googleController.verifyGoogleToken);
@@ -28,6 +31,9 @@ router.get("/available-balance", authMiddleware, DashboardController.getAvailabl
 router.post("/withdrawal",authMiddleware, createWithdrawal.withdrawRequest);
 router.get("/withdraws", authMiddleware, createWithdrawal.getUserWithdraws);
 router.get("/usdt-address", authMiddleware, createWithdrawal.getUserUsdtAddress);
+router.get("/deposit-History", authMiddleware, InvestController.getHistory);
+
+
 
 
 

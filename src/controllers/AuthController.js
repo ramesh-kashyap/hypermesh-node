@@ -260,7 +260,6 @@ const loginWithTelegram = async (req, res) => {
     try {
         const { telegram_id, tusername, tname, tlastname } = req.body;
 
-        console.log("🔹 Telegram ID:", telegram_id);
 
         if (!telegram_id) {
             return res.status(200).json({ message: "Telegram ID is required" });
@@ -331,14 +330,15 @@ const getUserProfile = async (req, res) => {
             where: { id: req.user.id }
         });
 
+
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(200).json({ message: "User not found" });
         }
 
         res.json(user); 
     } catch (error) {
         console.error("Error fetching user:", error.message);
-        res.status(500).json({ error: error.message });
+        res.status(200).json({ error: error.message });
     }
 };
 
