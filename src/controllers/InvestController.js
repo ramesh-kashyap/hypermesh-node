@@ -69,14 +69,14 @@ const generateWallet = async (req, res) => {
                 });
             }
         }
-            res.json({ message: "Wallet Assigned", wallet: wallet.wallet_address,blockchain:blockchain});
-
-
+     res.json({ message: "Wallet Assigned", wallet: wallet.wallet_address,blockchain:blockchain,status:true});
     } catch (error) {
         console.error("Error fetching investment history:", error.message, error.stack);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message,status:false });
     }
 };
+
+
 
 
 

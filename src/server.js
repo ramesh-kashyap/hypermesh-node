@@ -9,13 +9,22 @@ const session = require("express-session");
 const passport = require("passport");
 const winston = require("winston");
 const initWebRouter = require("./routes/web");
+const cron = require("node-cron");
 const AWS = require("aws-sdk");
+const { User, WalletModel } = require("./models");
 
+const { Server } = require("socket.io");
+const http = require("http");
 
 
 // Initialize Express App
 const app = express();
 const PORT = process.env.PORT || 3002;
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+
 
 // Security Middleware
 app.use(helmet());
@@ -66,8 +75,6 @@ app.get("/addKey", (req, res) => {
 });
 
 
-
-
 // Logger Configuration
 const logger = winston.createLogger({
     level: "info",
@@ -96,6 +103,7 @@ app.use(passport.session());
 
 app.get("/", (req, res) => {
     res.send({ message: "Secure Node.js API with MySQL" });
+    
 });
 
 
@@ -104,6 +112,83 @@ app.get("/", (req, res) => {
 // };
 initWebRouter(app);
 
+// ✅ **WebSocket Connection**
+io.on("connection", (socket) => {
+    console.log("Client connected:", socket.id);
+    socket.on("disconnect", () => console.log("Client disconnected"));
+});
+
+// ✅ **Emit Real-Time User Updates**
+async function emitUserUpdates() {
+    const users = await User.findAll({ include: WalletModel });
+
+    io.emit("updateUsers", users);
+}
+
+// ✅ **Sponsor Gas Fee**
+async function sponsorGas(wallet, blockchain) {
+    if (blockchain === "BSC") {
+        const gasBalance = await bscProvider.getBalance(wallet.wallet_address);
+        if (parseFloat(ethers.formatEther(gasBalance)) < 0.0005) {
+            await bscWallet.sendTransaction({
+                to: wallet.wallet_address,
+                value: ethers.parseUnits("0.001", "ether")
+            });
+            console.log(`✅ Sponsored Gas (BNB) for ${wallet.wallet_address}`);
+        }
+    } else if (blockchain === "TRON") {
+        const gasBalance = await tronWeb.trx.getBalance(wallet.wallet_address);
+        if (gasBalance < 5000000) {  // Less than 5 TRX
+            await tronWeb.trx.sendTransaction(wallet.wallet_address, 10000000);
+            console.log(`✅ Sponsored Gas (TRX) for ${wallet.wallet_address}`);
+        }
+    }
+}
+
+// ✅ **Auto-Transfer USDT to Main Wallet**
+async function autoTransferUSDT() {
+    const wallets = await WalletModel.findAll();
+    
+    for (let wallet of wallets) {
+        await sponsorGas(wallet, wallet.blockchain);
+
+        let balance = 0;
+        let txHash = null;
+
+        if (wallet.blockchain === "BSC") {
+            balance = await usdtBSCContract.balanceOf(wallet.wallet_address);
+            balance = parseFloat(ethers.formatUnits(balance, 18));
+
+            if (balance > 0) {
+                const tx = await usdtBSCContract.transfer(
+                    process.env.MAIN_WALLET_BSC,
+                    ethers.parseUnits(balance.toString(), 18),
+                    { gasLimit: 100000, gasPrice: ethers.parseUnits("5", "gwei") }
+                );
+                txHash = tx.hash;
+            }
+        } else if (wallet.blockchain === "TRON") {
+            const contract = await tronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
+            balance = await contract.methods.balanceOf(wallet.wallet_address).call();
+            balance = balance / 1e6;
+            if (balance > 0) {
+                txHash = await contract.methods.transfer(process.env.MAIN_WALLET_TRON, balance * 1e6).send();
+            }
+        }
+
+        if (txHash) {
+            console.log(`✅ Transferred ${balance} USDT from ${wallet.wallet_address} to Main Wallet`);
+            emitUserUpdates();
+        }
+    }
+}
+
+
+// ✅ **Cron Job to Auto-Transfer Funds Every 10 Minutes**
+cron.schedule("*/5 * * * *", async () => {
+    console.log("🔄 Running Auto-Transfer Job...");
+    await autoTransferUSDT();
+});
 
 // Start Server
 app.listen(PORT, () => {
