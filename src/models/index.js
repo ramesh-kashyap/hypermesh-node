@@ -3,6 +3,8 @@ const User = require('./User');
 const Investment = require('./Investment');
 const Withdraw = require('./Withdraw');
 const Income = require('./Income');
+// const TelegramUser = require('./TelegramUser');
+
 
 // Define relationships
 User.hasMany(Investment, { foreignKey: 'user_id_fk' });
@@ -14,7 +16,11 @@ Withdraw.belongsTo(User, { foreignKey: 'user_id_fk' });
 User.hasMany(Income, { foreignKey: 'user_id_fk' });
 Income.belongsTo(User, { foreignKey: 'user_id_fk' });
 
+// User.hasMany(TelegramUser, { foreignKey: 'user_id_fk' });
+// TelegramUser.belongsTo(User, { foreignKey: 'user_id_fk' });
+
+
 // Sync models
 sequelize.sync(); // Use { force: true } only if you want to recreate tables
 
-module.exports = { sequelize, User, Investment, Withdraw, Income };
+module.exports = { sequelize, User, Investment, Withdraw, Income,};

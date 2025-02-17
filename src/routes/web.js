@@ -28,6 +28,8 @@ router.post('/send-code', DashboardController.sendCode);
 router.post('/reset-password',  DashboardController.resetPassword);
 router.get("/available-balance", authMiddleware, DashboardController.getAvailableBalance);
 router.get("/deposit-History", authMiddleware, InvestController.getHistory);
+router.get("/telegram-history", authMiddleware, TelegramController.getTelegramHistory);
+
 
 
 
