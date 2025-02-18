@@ -64,7 +64,7 @@ const generateWallet = async (req, res) => {
                 wallet = await WalletModel.create({
                     blockchain,
                     user_id: user.id,
-                    wallet_address: newWallet.address,
+                    wallet_address: newWallet.address.base58,
                     private_key: newWallet.privateKey
                 });
             }
