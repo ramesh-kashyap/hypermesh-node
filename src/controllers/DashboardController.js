@@ -66,6 +66,45 @@ const sendCode = async (req, res) => {
 
 
 
+const connectTelegram = async (req, res) => {
+  
+  try {
+    const { telegram_id } = req.body;
+    const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
+    const id = user.id;
+      if (!telegram_id) {
+          return res.status(400).json({ message: "Telegram ID is required" });
+      }
+      
+      const userExist = await User.findOne({ where: { telegram_id:telegram_id } });
+      if (userExist) {
+        return res.status(400).json({ message: "Telegram User exists",status:false });
+      }
+      if (user.telegram_id) 
+        {
+        return res.status(400).json({ message: "User Already Connected",status:false });
+      }
+
+        // Find and update if exists, otherwise insert a new record
+        await User.upsert(
+          { id, telegram_id }, // Ensure both `id` and `telegram_id` are provided
+          { returning: true } // Ensures it returns the updated or created record
+      );
+
+
+        return res.json({
+            message:"Telegram Account Connected",
+            user,
+            status:true
+        });
+
+    } catch (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({ message: "Internal Server Error", status:false });
+    }
+};
+
+
 const resetPassword = async (req, res) => {
     try {
         const { email, code, PSR } = req.body;
@@ -141,4 +180,4 @@ const getAvailableBalance = async (req, res) => {
   }
 };
 
-module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance };
+module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance,connectTelegram };

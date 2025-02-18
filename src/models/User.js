@@ -96,13 +96,16 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+    telegram_id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true, // Ensuring telegram_id is unique
+    },
   
 }, {
     tableName: 'users',
     timestamps: false, // Enable createdAt and updatedAt fields
 });
-
-
 
 
 
