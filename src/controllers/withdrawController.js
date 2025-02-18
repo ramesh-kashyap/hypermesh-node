@@ -28,11 +28,10 @@ const withdrawRequest = async (req, res) => {
             user_id: req.user.id,
             user_id_fk: req.user.username,  
             payment_mode, 
-            amount: finalAmount,  // 🔹 Save after deduction
+            amount: finalAmount,  
             address,
             status: "pending",
             wdate: new Date().toISOString().split("T")[0], 
-            created_at: new Date() 
         });
 
         return res.status(201).json({ message: "Withdraw request submitted successfully.", withdraw });

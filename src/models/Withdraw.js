@@ -6,6 +6,8 @@ const Withdraw = sequelize.define('Withdraw', {
     user_id: { type: DataTypes.INTEGER, allowNull: false },
     amount: { type: DataTypes.FLOAT, allowNull: false },
     status: { type: DataTypes.ENUM('Approved', 'Pending', 'Rejected'), defaultValue: 'Pending' },
+    created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }, // ✅ Manually added
+
     payment_mode: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -19,9 +21,11 @@ const Withdraw = sequelize.define('Withdraw', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+   
+    
 }, {
     tableName: 'withdraws',
-    timestamps: false
+    timestamps: false 
 });
 
 module.exports = Withdraw;
