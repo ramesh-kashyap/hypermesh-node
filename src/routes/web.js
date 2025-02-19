@@ -32,6 +32,8 @@ router.post("/withdrawal",authMiddleware, createWithdrawal.withdrawRequest);
 router.get("/withdraws", authMiddleware, createWithdrawal.getUserWithdraws);
 router.get("/usdt-address", authMiddleware, createWithdrawal.getUserUsdtAddress);
 router.get("/deposit-History", authMiddleware, InvestController.getHistory);
+router.get('/referrals-user',authMiddleware,  DashboardController.getReferralsUser);
+
 
 
 

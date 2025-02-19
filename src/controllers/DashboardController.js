@@ -114,7 +114,7 @@ const getUserDetails = async (req, res) => {
             
         });
     } catch (error) {
-        console.error("❌ Error fetching user details:", error);
+        console.error("Error fetching user details:", error);
         return res.status(500).json({ error: "Internal Server Error" ,   status: false});
     }
 };
@@ -141,4 +141,23 @@ const getAvailableBalance = async (req, res) => {
   }
 };
 
-module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance };
+const getReferralsUser = async (req, res) => {
+    try {
+        const userId = req.user.id; // Authenticated user ID
+        console.log("Logged-in User ID:", userId);
+
+        const totalReferrals = await User.count({ where: { sponsor: userId } });
+        console.log("Total Referrals:", totalReferrals);
+
+
+        res.json({ totalReferrals });
+    } catch (error) {
+        console.error("Error fetching referrals:", error);
+
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+
+
+module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance,getReferralsUser };
