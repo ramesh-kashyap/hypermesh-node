@@ -2,8 +2,9 @@ const sequelize = require('../config/connectDB'); // Import Sequelize connection
 const { QueryTypes } = require('sequelize');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // User Model Import Karein
-
+const User = require("../models/User");
+const express = require('express');
+// const bodyParser = require('body-parser')
 
 
 
@@ -364,6 +365,16 @@ const updateUserProfile = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+
+
+
+
+
+
+
+
+
 
 
 module.exports = { login, register, logout,loginWithTelegram,getUserProfile,updateUserProfile};
