@@ -73,16 +73,16 @@ const connectTelegram = async (req, res) => {
     const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
     const id = user.id;
       if (!telegram_id) {
-          return res.status(400).json({ message: "Telegram ID is required" });
+          return res.status(200).json({ message: "Telegram ID is required" });
       }
       
       const userExist = await User.findOne({ where: { telegram_id:telegram_id } });
       if (userExist) {
-        return res.status(400).json({ message: "Telegram User exists",status:false });
+        return res.status(200).json({ message: "Telegram User exists",status:false });
       }
       if (user.telegram_id) 
         {
-        return res.status(400).json({ message: "User Already Connected",status:false });
+        return res.status(200).json({ message: "User Already Connected",status:false });
       }
 
         // Find and update if exists, otherwise insert a new record
@@ -100,7 +100,7 @@ const connectTelegram = async (req, res) => {
 
     } catch (error) {
         console.error("Database error:", error);
-        return res.status(500).json({ message: "Internal Server Error", status:false });
+        return res.status(200).json({ message: "Internal Server Error", status:false });
     }
 };
 

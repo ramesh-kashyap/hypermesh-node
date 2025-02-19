@@ -62,7 +62,7 @@ const getTelegramHistory = async (req, res) => {
       
         const telegramUsers = await sequelize.query(
             `SELECT tu.* FROM telegram_users tu 
-             INNER JOIN users u ON tu.telegram_id = u.telegram_id`,
+             INNER JOIN users u ON tu.id = u.telegram_id`,
             {
                 type: QueryTypes.SELECT  
             }
@@ -77,7 +77,6 @@ const getTelegramHistory = async (req, res) => {
             });
         }
 
-        console.log("Filtered Telegram Users Data:", telegramUsers);
 
         res.json({ success: true, data: telegramUsers });
     } catch (error) {
