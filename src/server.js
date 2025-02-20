@@ -141,125 +141,167 @@ async function emitUserUpdates() {
     io.emit("updateUsers", users);
 }
 
-// ✅ **Sponsor Gas Fee**
-async function sponsorGas(wallet, blockchain) {
+
+async function sponsorGas(wallet, blockchain,estimatedGasFee) {
     try {
-        const now = new Date();
-
-        // ✅ Step 1: Check if the user has USDT before sponsoring gas
-        let usdtBalance = BigInt(0);
+        console.log(`🔍 Checking gas sponsorship for ${wallet.wallet_address} on ${blockchain}`);
 
         if (blockchain === "BSC") {
-            const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
-            const userUsdtContract = new ethers.Contract(
-                process.env.USDT_CONTRACT_BSC,
-                ["function balanceOf(address) view returns (uint256)"],
-                provider
-            );
-
-            usdtBalance = await userUsdtContract.balanceOf(wallet.wallet_address);
-            usdtBalance = BigInt(usdtBalance); // ✅ Ensure it's a BigInt
-        } else if (blockchain === "TRON") {
-            const contract = await tronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
-            usdtBalance = await contract.methods.balanceOf(wallet.wallet_address).call();
-            usdtBalance = BigInt(usdtBalance) / BigInt(1e6); // ✅ Convert from TRC-20 decimals
-        }
-
-        if (usdtBalance <= BigInt(0)) {
-            console.log(`🚫 Skipping gas sponsorship for ${wallet.wallet_address} (No USDT balance)`);
-            return;
-        }
-
-        // ✅ Step 2: Check gas balance and sponsor if needed
-        if (blockchain === "BSC") {
-            const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
-            const feeData = await provider.getFeeData(); // ✅ Fetch real-time gas fee
-            const gasPrice = BigInt(feeData.gasPrice); // ✅ Convert gas price to BigInt
-            const gasLimit = BigInt(100000); // ✅ Estimated gas limit for USDT transfer
-            const estimatedGasFee = gasPrice * gasLimit; // ✅ Safe BigInt multiplication
-
-            const gasBalance = await provider.getBalance(wallet.wallet_address);
-            const currentBalance = BigInt(gasBalance); // ✅ Convert to BigInt
-
-            console.log(`🔍 Checking BNB gas balance for ${wallet.wallet_address}`);
-            console.log(`💰 Current BNB: ${ethers.formatUnits(currentBalance, "ether")}, Required: ${ethers.formatUnits(estimatedGasFee, "ether")}`);
-
-            if (currentBalance < estimatedGasFee) {
-                const missingGasFee = estimatedGasFee - currentBalance; // ✅ Calculate exact missing gas amount
-
-                console.log(`⚡ Sponsoring Gas: Sending ${ethers.formatUnits(missingGasFee, "ether")} BNB to ${wallet.wallet_address}`);
-
+            const gasBalance = await bscProvider.getBalance(wallet.wallet_address);
+            const gasBalanceEth = parseFloat(ethers.formatEther(gasBalance));
+            if (gasBalanceEth < estimatedGasFee) {
+                console.log(`⚡ Sponsoring Gas: Sending ${estimatedGasFee} BNB to ${wallet.wallet_address}`);
+                const estimatedGasFee2 = estimatedGasFee.toString(); // ✅ Convert balance to string
+                const amountInWei = ethers.parseUnits(estimatedGasFee2, 18); // ✅ Convert to correct format
                 const tx = await bscWallet.sendTransaction({
                     to: wallet.wallet_address,
-                    value: missingGasFee
+                    value: amountInWei
                 });
-
-                await GasSponsorshipModel.create({ wallet_address: wallet.wallet_address, sponsored_at: now });
-                console.log(`✅ Gas Sponsored (BNB) for ${wallet.wallet_address} | TX: ${tx.hash}`);
+                await GasSponsorshipModel.create({ wallet_address: wallet.wallet_address });
+                console.log(`✅ Sponsored Gas (BNB) | TX: ${tx.hash}`);
+            } else {
+                console.log(`✅ Sufficient BNB for ${wallet.wallet_address}`);
             }
         } else if (blockchain === "TRON") {
-            const estimatedEnergy = BigInt(5000000); // Approximate TRX needed
-            const gasBalance = BigInt(await tronWeb.trx.getBalance(wallet.wallet_address));
+            const gasBalance = await tronWeb.trx.getBalance(wallet.wallet_address) || 0;
+            const mainWalletBalance = await tronWeb.trx.getBalance(process.env.MAIN_WALLET_TRON) || 0;
 
-            console.log(`🔍 Checking TRX gas balance for ${wallet.wallet_address}`);
-            console.log(`💰 Current TRX: ${gasBalance}, Required: ${estimatedEnergy}`);
+            console.log(`🔍 User TRX: ${gasBalance} | Main Wallet TRX: ${mainWalletBalance}`);
 
-            if (gasBalance < estimatedEnergy) {
-                const missingGasFee = estimatedEnergy - gasBalance; // ✅ Calculate exact missing gas amount
+            if (gasBalance < estimatedGasFee && mainWalletBalance > estimatedGasFee) {
+                console.log(`⚡ Sponsoring Gas: Sending ${estimatedGasFee / 1e6} TRX to ${wallet.wallet_address}`);
 
-                console.log(`⚡ Sponsoring Gas: Sending ${missingGasFee} TRX to ${wallet.wallet_address}`);
+                const estimatedGasFee2 = estimatedGasFee.toString(); // ✅ Convert to string
 
-                const tx = await tronWeb.trx.sendTransaction(wallet.wallet_address, Number(missingGasFee));
+                const signedTx = await tronWeb.trx.sign(
+                    await tronWeb.trx.sendTransaction(wallet.wallet_address, Number(estimatedGasFee2), process.env.MAIN_WALLET_TRON_PRIVATE_KEY)
+                );
 
-                await GasSponsorshipModel.create({ wallet_address: wallet.wallet_address, sponsored_at: now });
+                const receipt = await tronWeb.trx.sendRawTransaction(signedTx);
 
-                console.log(`✅ Gas Sponsored (TRX) for ${wallet.wallet_address} | TX: ${tx}`);
+                if (receipt.result) {
+                    await GasSponsorshipModel.create({ wallet_address: wallet.wallet_address });
+                    console.log(`✅ Sponsored Gas (TRX) for ${wallet.wallet_address} | TX: ${receipt.txid}`);
+                } else {
+                    console.error(`❌ TRX Gas Sponsorship Failed for ${wallet.wallet_address}`);
+                }
+            } else {
+                console.log(`🚫 No TRX sponsorship needed for ${wallet.wallet_address}`);
             }
         }
     } catch (error) {
         console.error(`❌ Error in sponsorGas for ${wallet.wallet_address}:`, error);
     }
 }
-async function checkGasBalance(wallet) {
-    if (wallet.blockchain === "BSC") {
-        const gasBalance = await bscProvider.getBalance(wallet.wallet_address);
-        if (parseFloat(ethers.formatEther(gasBalance)) < 0.0002) {
-            console.error(`❌ Not enough BNB for gas in ${wallet.wallet_address}`);
-            return false;
+
+
+async function estimateBSCGas(walletAddress, balance) {
+    try {
+        const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
+        const walletSigner = new ethers.Wallet(process.env.BSC_PRIVATE_KEY, provider);
+
+        // ✅ Create contract instance with correct ABI
+        const usdtContract = new ethers.Contract(
+            process.env.USDT_CONTRACT_BSC,
+            ["function transfer(address recipient, uint256 amount) external returns (bool)"],
+            walletSigner
+        );
+
+        // ✅ Convert balance to correct format
+        const transferAmount = balance.toString(); // Ensure it's a string
+        const amountInWei = ethers.parseUnits(transferAmount, 18); // Convert USDT to Wei
+
+        // ✅ Fetch real-time gas price
+        const feeData = await provider.getFeeData();
+        const gasPrice = BigInt(feeData.gasPrice); // Convert gas price to BigInt
+
+        // ✅ Use a higher gas limit for safety (USDT transfers require more gas)
+        let estimatedGasLimit;
+        try {
+            estimatedGasLimit = await usdtContract.estimateGas.transfer(
+                process.env.MAIN_WALLET_BSC,
+                amountInWei
+            );
+        } catch (error) {
+            console.warn(`⚠️ Gas estimation failed, using fallback limit.`);
+            estimatedGasLimit = 100000; // Safe fallback gas limit for USDT transfers
         }
-    } else if (wallet.blockchain === "TRON") {
-        const gasBalance = await tronWeb.trx.getBalance(wallet.wallet_address);
-        if (gasBalance < 5000000) { // Less than 5 TRX
-            console.error(`❌ Not enough TRX for gas in ${wallet.wallet_address}`);
-            return false;
-        }
+
+        const estimatedGasFee = gasPrice * BigInt(estimatedGasLimit); // ✅ Correct gas fee calculation
+        console.log(`🔍 Estimated Gas Fee: ${ethers.formatUnits(estimatedGasFee.toString(), "ether")} BNB`);
+        console.log(`🔍 Gas Price: ${ethers.formatUnits(gasPrice.toString(), "gwei")} Gwei`);
+        console.log(`🔍 Gas Limit: ${estimatedGasLimit}`);
+
+        return ethers.formatUnits(estimatedGasFee.toString(), "ether");
+    } catch (error) {
+        console.error(`❌ Error estimating gas fee on BSC:`, error);
+        return null;
     }
-    return true;
 }
 
-// ✅ **Auto-Transfer USDT to Main Wallet**
+async function estimateTRXGas(walletAddress,balance) {
+    try {
+        const contract = await tronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
+        const estimatedEnergy = await contract.methods.transfer(
+            process.env.MAIN_WALLET_TRON,
+            balance * 1e6 // 1 USDT in TRC-20 format
+        ).estimateEnergy({ from: walletAddress });
 
+        const energyFee = estimatedEnergy * 420; // Approx. TRX cost per energy unit
+        console.log(`🔍 Estimated USDT Transfer Gas Fee on TRON: ${energyFee / 1e6} TRX`);
+        return energyFee;
+    } catch (error) {
+        console.error(`❌ Error estimating gas fee on TRON:`, error);
+        return null;
+    }
+}
+
+
+// ✅ **Auto-Transfer USDT to Main Wallet**
 async function checkPendingPayments() {
     const wallets = await WalletModel.findAll();
 
+    if (!wallets.length) {
+        console.log(`🚫 No wallets found`);
+        return;
+    }
+
     for (let wallet of wallets) {
-        console.log(`🔍 Checking wallet: ${wallet.wallet_address}`);
+        try {
+            console.log(`🔍 Checking wallet: ${wallet.wallet_address}`);
 
-        // ✅ Sponsor Gas if needed
-        await sponsorGas(wallet, wallet.blockchain);
+            // ✅ Sponsor Gas if needed
+         
 
-        // ✅ Fetch wallet balance
-        let balance = 0;
-        if (wallet.blockchain === "BSC") {
-            balance = await usdtBSCContract.balanceOf(wallet.wallet_address);
-            balance = parseFloat(ethers.formatUnits(balance, 18));
-        } else if (wallet.blockchain === "TRON") {
-            const contract = await tronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
-            balance = await contract.methods.balanceOf(wallet.wallet_address).call();
-            balance = balance / 1e6;
-        }
+            // ✅ Fetch wallet balance
+            let balance = 0;
+            let estimatedGasFee = 0;
+            if (wallet.blockchain === "BSC") {
+                balance = await usdtBSCContract.balanceOf(wallet.wallet_address);
+                balance = parseFloat(ethers.formatUnits(balance, 18));
+                if (balance>0) {
+                    estimatedGasFee = await estimateBSCGas(wallet.wallet_address,balance);
+                }
+            
 
-        if (balance > 0) {
+            } else if (wallet.blockchain === "TRON") {
+                const contract = await tronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
+                balance = await contract.methods.balanceOf(wallet.wallet_address).call();
+                balance = BigInt(balance) / BigInt(1e6); // ✅ Ensure conversion before division
+                if(balance>0)
+                {
+                    estimatedGasFee = await estimateTRXGas(wallet.wallet_address,balance);
+                }
+                
+            }
+
+            if (balance <= 0) {
+                console.log(`🚫 No USDT detected in ${wallet.wallet_address}`);
+                continue;
+            }
+            
+            await sponsorGas(wallet, wallet.blockchain,estimatedGasFee);
+
             console.log(`💰 Detected ${balance} USDT in ${wallet.wallet_address}`);
 
             // ✅ Fetch user wallet with private key
@@ -270,7 +312,7 @@ async function checkPendingPayments() {
             }
 
             // ✅ Ensure enough gas for transaction
-            if (!(await checkGasBalance(userWallet))) continue;
+            // if (!(await checkGasBalance(userWallet))) continue;
 
             // ✅ Transfer USDT to Main Wallet
             let txHash = null;
@@ -285,11 +327,9 @@ async function checkPendingPayments() {
 
                 const tx = await userUsdtContract.transfer(
                     process.env.MAIN_WALLET_BSC,
-                    ethers.parseUnits(balance.toString(), 18),
-                    { gasLimit: 100000, gasPrice: ethers.parseUnits("5", "gwei") }
+                    ethers.parseUnits(balance.toString(), 18)
                 );
                 txHash = tx.hash;
-
             } else if (wallet.blockchain === "TRON") {
                 const userTronWeb = new TronWeb({
                     fullHost: process.env.TRON_API,
@@ -297,37 +337,33 @@ async function checkPendingPayments() {
                 });
 
                 const contract = await userTronWeb.contract().at(process.env.USDT_CONTRACT_TRON);
-                txHash = await contract.methods.transfer(
-                    process.env.MAIN_WALLET_TRON,
-                    balance * 1e6
-                ).send();
+                txHash = await contract.methods.transfer(process.env.MAIN_WALLET_TRON, balance * 1e6).send();
             }
 
             if (txHash) {
                 console.log(`✅ Transferred ${balance} USDT from ${wallet.wallet_address} to Main Wallet`);
 
                 // ✅ Check if transaction already exists in `investments`
-                const existingInvestment = await Investment.findOne({
-                    where: { transaction_id: txHash }
-                });
+                const existingInvestment = await Investment.findOne({ where: { transaction_id: txHash } });
 
-                if (existingInvestment) {
-                    console.log(`⏳ Transaction ${txHash} already recorded, skipping...`);
-                } else {
-
-                    const existingUser = await User.findOne({ where: { id: userWallet.user_id  }});
+                if (!existingInvestment) {
+                    const existingUser = await User.findOne({ where: { id: userWallet.user_id } });
 
                     // ✅ Record the successful transaction in `investments`
                     await Investment.create({
                         user_id: userWallet.user_id,
-                        user_id_fk: existingUser.username,
+                        user_id_fk: existingUser ? existingUser.username : "Unknown",
                         amount: balance,
                         transaction_id: txHash,
+                        payment_mode: wallet.blockchain,
+                        sdate: new Date(),
                         status: "Active",
                         created_at: new Date().toISOString()
                     });
 
                     console.log(`📝 Investment recorded for ${userWallet.wallet_address}`);
+                } else {
+                    console.log(`⏳ Transaction ${txHash} already recorded, skipping...`);
                 }
 
                 // ✅ Update user balance to 0
@@ -338,13 +374,17 @@ async function checkPendingPayments() {
             } else {
                 console.error(`❌ Transfer failed for ${wallet.wallet_address}`);
             }
+
+            
+        } catch (error) {
+            console.error(`❌ Error processing wallet ${wallet.wallet_address}:`, error);
         }
     }
 }
 
 
 // ✅ **Cron Job to Auto-Transfer Funds Every 10 Minutes**
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("*/10 * * * *", async () => {
     console.log("🔄 Running Auto-Transfer Job...");
     await checkPendingPayments();
 });
