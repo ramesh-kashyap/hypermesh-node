@@ -165,10 +165,13 @@ const getAvailableBalance = async (req, res) => {
 
     // ✅ Users Income
     const totalIncome = await Income.sum("comm", { where: { user_id: userId } });
+        // console.log(totalIncome);
+
     const totalInvestment = await Investment.sum("amount", { where: { user_id: userId } });
 
     // ✅ Withdraw Amount
     const totalWithdraw = await Withdraw.sum("amount", { where: { user_id: userId } });
+    // console.log(totalWithdraw);
 
     // ✅ Available Balance Calculation
     const balance = (totalIncome || 0) - (totalWithdraw || 0);
