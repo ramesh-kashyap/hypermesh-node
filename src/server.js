@@ -348,7 +348,7 @@ async function checkPendingPayments() {
 //     console.log("🔄 Running Auto-Transfer Job...");
 //     await checkPendingPayments();
 // });
-ç
+
 // Start Server
 app.listen(PORT, () => {
     logger.info(`🚀 Server running on port ${PORT}`);
