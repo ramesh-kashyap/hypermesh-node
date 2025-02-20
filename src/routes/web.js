@@ -29,8 +29,13 @@ router.put('/Update-Profile', authMiddleware, AuthController.updateUserProfile);
 router.post('/send-code', DashboardController.sendCode);
 router.post('/reset-password',  DashboardController.resetPassword);
 router.get("/available-balance", authMiddleware, DashboardController.getAvailableBalance);
+router.post("/connect-telegram", authMiddleware, DashboardController.connectTelegram);
+
 router.get("/deposit-History", authMiddleware, InvestController.getHistory);
+router.post("/recharge", authMiddleware, InvestController.generateWallet);
 router.get("/telegram-history", authMiddleware, TelegramController.getTelegramHistory);
+router.post("/generate-wallet", authMiddleware, InvestController.generateWallet);
+router.post("/recharge", authMiddleware, InvestController.generateWallet);
 
 
 

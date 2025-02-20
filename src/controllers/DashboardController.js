@@ -66,49 +66,81 @@ const sendCode = async (req, res) => {
 
 
 
+const connectTelegram = async (req, res) => {
+  
+  try {
+    const { telegram_id } = req.body;
+    const user = req.user; // 🔹 Get authenticated user (Assuming JWT middleware is used   
+    const id = user.id;
+      if (!telegram_id) {
+          return res.status(200).json({ message: "Telegram ID is required" });
+      }
+      
+      const userExist = await User.findOne({ where: { telegram_id:telegram_id } });
+      if (userExist) {
+        return res.status(200).json({ message: "Telegram User exists",status:false });
+      }
+      if (user.telegram_id) 
+        {
+        return res.status(200).json({ message: "User Already Connected",status:false });
+      }
+
+        // Find and update if exists, otherwise insert a new record
+        await User.upsert(
+          { id, telegram_id }, // Ensure both `id` and `telegram_id` are provided
+          { returning: true } // Ensures it returns the updated or created record
+      );
+
+
+        return res.json({
+            message:"Telegram Account Connected",
+            user,
+            status:true
+        });
+
+    } catch (error) {
+        console.error("Database error:", error);
+        return res.status(200).json({ message: "Internal Server Error", status:false });
+    }
+};
+
+
 const resetPassword = async (req, res) => {
     try {
         const { email, code, PSR } = req.body;
-        console.log("Received Request for Reset Password");
 
-        // ✅ Check if the verification code is valid and not expired
+       
         const user = await User.findOne({
             where: {
                 email,
                 verification_code: code,
-                code_expires_at: { [Op.gt]: new Date() } // Code expiry check
+                code_expires_at: { [Op.gt]: new Date() } 
             }
         });
 
         if (!user) {
-            console.log("Invalid or expired verification code for:", email);
             return res.status(400).json({ message: 'Invalid or expired code' });
         }
 
-        console.log("User Found:", user.email);
 
-        // ✅ Update the password and reset the verification code
         await user.update({ PSR, verification_code: null, code_expires_at: null });
-        console.log("Password updated successfully for:", email);
 
         return res.json({ message: 'Password updated successfully' });
 
     } catch (error) {
         console.error("Error in resetPassword function:", error.message);
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 const getUserDetails = async (req, res) => {
     try {
-        // ✅ Get logged-in user details from `req.user` (set by `authMiddleware`)
         const user = req.user; 
 
         if (!user) {
             return res.status(404).json({ error: "User not found" , status: false});
         }
 
-        // ✅ Return only necessary fields
         return res.status(200).json({
             id: user.id,
             username: user.username,
@@ -148,4 +180,4 @@ const getAvailableBalance = async (req, res) => {
   }
 };
 
-module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance };
+module.exports = { getUserDetails,sendCode,resetPassword,getAvailableBalance,connectTelegram };

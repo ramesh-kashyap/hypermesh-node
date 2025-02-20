@@ -48,6 +48,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    usdtTrc20: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    usdtBep20: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     PSR: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -88,13 +96,16 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+    telegram_id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true, // Ensuring telegram_id is unique
+    },
   
 }, {
     tableName: 'users',
     timestamps: false, // Enable createdAt and updatedAt fields
 });
-
-
 
 
 
