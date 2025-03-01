@@ -281,7 +281,7 @@ const loginWithTelegram = async (req, res) => {
             const token = jwt.sign(
                 { id: user.id, telegram_id: user.telegram_id },
                 process.env.JWT_SECRET,
-                { expiresIn: "1h" }
+                { expiresIn: "5h" }
             );
 
             return res.status(200).json({

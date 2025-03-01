@@ -44,6 +44,10 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    userbalance: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+    },
     password: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -60,14 +64,8 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    verification_code: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    code_expires_at: { 
-        type: DataTypes.DATE,
-        allowNull: true,
-    },
+  
+   
     created_at: {
         type: DataTypes.STRING,
         allowNull: true,

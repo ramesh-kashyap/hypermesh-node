@@ -1,5 +1,10 @@
 const sequelize = require('../config/connectDB'); // Import Sequelize connection
-const { QueryTypes } = require('sequelize');
+const { QueryTypes,Op } = require('sequelize');
+const TelegramUser = require("../models/TelegramUser");
+const { User,Income,Transaction,UserTask} = require("../models"); // Adjust path as needed
+const Task = require("../models/Task");
+const moment = require("moment-timezone");
+const { getVip,getBalance,getPercentage } = require("../services/userService");
 
 let timeNow = Date.now();
 
@@ -85,6 +90,350 @@ const getTelegramHistory = async (req, res) => {
     }
 };
 
+const startTrade = async (req, res) => {
+    try {
+        const { telegram_id } = req.body;
+        if (!telegram_id) {
+            return res.status(400).json({ success: false, message: "Telegram ID is required" });
+        }
+
+        const query = `
+            SELECT 
+                tu.telegram_id, tu.tusername, tu.tname, tu.tlastname,
+                u.id AS user_id, u.email, u.name, u.username
+            FROM telegram_users tu
+            LEFT JOIN users u ON tu.id = u.telegram_id
+            WHERE tu.telegram_id = :telegram_id;`;
+
+        const results = await sequelize.query(query, {
+            replacements: { telegram_id },
+            type: QueryTypes.SELECT
+        });
+
+        if (!results.length || !results[0].user_id) {
+            return res.status(404).json({
+                message: "User not found",
+                status: false,
+                timeStamp: moment().tz("Asia/Kolkata").format(), // ✅ IST Timestamp
+            });
+        }
+
+        let userId = results[0].user_id;
+
+        const vipLevel = await getVip(userId);
+        const percentage = await getPercentage(vipLevel);
+        const userBalance = await getBalance(userId);
+        const rewardPerDay = (userBalance * percentage) / 100;
+
+        // ✅ Set lastTrade to current IST time + 24 hours
+
+        // const lastTradeUTC = moment().utc().add(24, "hours").format("YYYY-MM-DD HH:mm:ss");
+        const now = new Date();
+        const lastTradeUTC = new Date(now.setHours(now.getHours() + 24));
 
 
-module.exports = { getUserByTelegramId,getTelegramHistory };
+        // ✅ Store in UTC format but based on IST calculations
+
+        // Update or create lastTrade for the user
+        const [user, created] = await TelegramUser.findOrCreate({
+            where: { telegram_id },
+            defaults: { lastTrade: lastTradeUTC, total_reward: rewardPerDay },
+        });
+
+        if (!created) {
+            await user.update({ lastTrade: lastTradeUTC, total_reward: rewardPerDay });
+        }
+
+        return res.json({
+            success: true,
+            lastTrade: lastTradeUTC, // ✅ Stored in UTC, calculated from IST
+            depositAmount: userBalance,
+            rewardPerDay: rewardPerDay,
+        });
+
+    } catch (error) {
+        console.error("Error updating lastTrade:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+// API to get lastTrade time for a user
+const getLastTrade = async (req, res) => {
+    try {
+        const { telegram_id } = req.body;
+        if (!telegram_id) {
+            return res.status(400).json({ success: false, message: "Telegram ID is required" });
+        }
+
+        // Fetch lastTrade time from the database
+        const user = await TelegramUser.findOne({ where: { telegram_id } });
+
+        if (!user || !user.lastTrade) {
+            return res.json({ success: false, message: "No lastTrade time found" });
+        }
+        const lastTrade = user.lastTrade;
+        const todayroi = user.todayroi || 0;
+    
+        const now = new Date();
+        const lastTradeTime = new Date(lastTrade);
+        const timeLeft = Math.max((lastTradeTime - now) / 1000, 0); // Remaining time in seconds
+    
+        return res.json({ success: true, lastTrade, todayroi, timeLeft });
+
+    } catch (error) {
+        console.error("Error fetching lastTrade:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
+
+
+const fetchPoints = async (req, res) => {
+    try {
+        const { telegram_id } = req.user;
+        if (!telegram_id) {
+            return res.status(400).json({ success: false, message: "Telegram ID is required" });
+        }
+
+        let user = await TelegramUser.findOne({ where: { telegram_id } });
+        console.log(user.lastTrade);
+        
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+         // ✅ Convert to UTC first, then IST
+         const nowIST = moment().tz("Asia/Kolkata");
+         const lastTradeIST = user.lastTrade ? moment.utc(user.lastTrade).tz("Asia/Kolkata") : null;
+
+        if (!lastTradeIST) {
+            console.log("Last trade is null. Showing Start button.");
+            return res.json({ success: true, todayroi: user.todayroi, timeLeft: 0, showClaim: false });
+        }
+
+        let elapsedSeconds = nowIST.diff(lastTradeIST, "seconds");
+        if (elapsedSeconds < 0) {
+            console.log(`Invalid lastTrade timestamp: ${user.lastTrade}`);
+            elapsedSeconds = 0; // Prevent negative elapsed time
+        }
+
+        // If 24 hours have passed, show Claim button
+        if (elapsedSeconds >= 24 * 60 * 60) {
+            console.log("24 hours passed. Showing Claim button.");
+            return res.json({ success: true, todayroi: user.todayroi, timeLeft: 0, showClaim: true });
+        }
+
+        // Validate rewardPerDay
+        const rewardPerDay = user.total_reward || 0; // Prevent undefined values
+        if (rewardPerDay <= 0) {
+            console.log("Invalid rewardPerDay. Cannot increase ROI.");
+            return res.json({ success: true, todayroi: user.todayroi, timeLeft: 24 * 60 * 60 - elapsedSeconds, showClaim: false });
+        }
+
+        const rewardPerSec = rewardPerDay / (24 * 60 * 60);
+        let newTodayROI = Math.min(user.todayroi + elapsedSeconds * rewardPerSec, rewardPerDay);
+
+        // Ensure ROI doesn't go negative
+        newTodayROI = Math.max(newTodayROI, 0);
+
+        // Update today's ROI in the database
+        await TelegramUser.update({ todayroi: newTodayROI }, { where: { telegram_id } });
+
+        console.log(`Updated todayroi: ${newTodayROI}, timeLeft: ${24 * 60 * 60 - elapsedSeconds}`);
+
+        // Calculate remaining time until claim
+        const timeLeft = Math.max(24 * 60 * 60 - elapsedSeconds, 0);
+
+        res.json({ success: true, todayroi: newTodayROI, timeLeft, showClaim: false });
+    } catch (error) {
+        console.error("Error fetching points:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+
+// API to get lastTrade time for a user
+const claimReward = async (req, res) => {
+    const { telegram_id } = req.body;
+
+  try {
+    let user = await TelegramUser.findOne({ where: { telegram_id } });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+    if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
+    
+    let commission = user.total_reward;
+     await Income.create({
+        user_id: userDetail.id,
+        user_id_fk: userDetail.username,
+        amt: commission,
+        comm: commission,
+        remarks: "Mining Bonus",
+        ttime: new Date(),
+    });
+    
+    await Transaction.create({
+        user_id: userDetail.id,
+        user_id_fk: userDetail.username,
+        amount: commission,
+        credit_type: 0,
+        remarks: "Mining Bonus",
+        ttime: new Date(),
+    });
+    
+    // Update user balance
+    await User.update(
+        { userbalance: userDetail.userbalance + commission },
+        { where: { id: userDetail.id } }
+    );
+    await TelegramUser.update({ todayroi: 0,total_reward: 0, lastTrade : null }, { where: { telegram_id } });
+
+    res.json({ success: true, message: "Reward claimed!" });
+  } catch (error) {
+    console.error("Error claiming reward:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }   
+};
+
+
+// API to get lastTrade time for a user
+const updateTodayRoi = async (req, res) => {
+    const { telegram_id, todayroi } = req.body;
+
+  try {
+    let user = await TelegramUser.findOne({ where: { telegram_id } });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+   
+    await TelegramUser.update({ todayroi: todayroi }, { where: { telegram_id } });
+
+    res.json({ success: true, message: "todayroi updated successfully!" });
+  } catch (error) {
+    console.error("Error todayroi update:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }   
+};
+
+const getMiningBonus = async (req, res) => {
+  try {
+    let user = req.user;
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+    if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of the day
+
+    const todayBonus = await Income.sum("comm", {
+        where: {
+            user_id: userDetail.id,
+            remarks: "Mining Bonus",
+            ttime: {
+                [Op.gte]: today, // Greater than or equal to today (start of the day)
+            },
+        },
+    });
+    const totalBonus = await Income.sum("comm", {
+        where: {
+            user_id: userDetail.id,
+            remarks: "Mining Bonus",
+        },
+    });
+    res.json({ success: true,todayBonus,totalBonus });
+  } catch (error) {
+    console.error("Error in getTodayMiningBonus:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }   
+};
+
+
+const startTask = async (req, res) => {
+    try {
+        const { telegram_id, task_id } = req.body;
+
+      
+        const [userTask, created] = await UserTask.findOrCreate({
+            where: { telegram_id, task_id },
+            defaults: { status: "pending" },
+          });
+          res.json({ message: created ? "Task started" : "Task already in progress" });
+
+    } catch (error) {
+        res.status(500).json({ error: "Error starting task" });
+    }
+  };
+
+
+  const claimTask = async (req, res) => {
+    try {
+        const { telegram_id, task_id } = req.body;
+
+        await UserTask.update({ status: "completed" }, { where: { telegram_id, task_id } });
+
+        res.json({ message: "Task claimed successfully" });
+
+    } catch (error) {
+        res.status(500).json({ error: "Error starting task" });
+    }
+  };
+
+const getTasks = async (req, res) => {
+    try {
+        const { telegram_id } = req.body;        
+        const tasks = await Task.findAll({
+            where: { isTop: '0' }, // Example: Filtering tasks with status = 'active'
+            include: [
+              {
+                model: UserTask,
+                as: "userTasks",
+                where: { telegram_id },
+                required: false,
+              },
+            ],
+          });
+      
+          // Format response to include status
+          const formattedTasks = tasks.map((task) => ({
+            id: task.id,
+            name: task.name,
+            reward: task.reward,
+            icon: task.icon,
+            link: task.link,
+            isTop: task.isTop,
+            status: task.userTasks?.length ? task.userTasks[0].status : "not_started",
+          }));
+
+
+          const tasks2 = await Task.findAll({
+            where: { isTop: '1' }, // Example: Filtering tasks with status = 'active'
+            include: [
+              {
+                model: UserTask,
+                as: "userTasks",
+                where: { telegram_id },
+                required: false,
+              },
+            ],
+          });
+      
+          // Format response to include status
+          const formattedTasks2 = tasks2.map((task) => ({
+            id: task.id,
+            name: task.name,
+            reward: task.reward,
+            icon: task.icon,
+            link: task.link,
+            isTop: task.isTop,
+            status: task.userTasks?.length ? task.userTasks[0].status : "not_started",
+          }));
+
+          
+          res.json({topTask:formattedTasks2,buttonTask:formattedTasks});
+
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+
+  
+
+
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask};
