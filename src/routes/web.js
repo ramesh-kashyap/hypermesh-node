@@ -55,8 +55,10 @@ router.get('/fetch-points',telegramAuthMiddleware, TelegramController.fetchPoint
 router.post('/update-today-roi',telegramAuthMiddleware, TelegramController.updateTodayRoi);
 router.get('/get-mining-bonus',telegramAuthMiddleware, TelegramController.getMiningBonus);
 router.post('/getTasks',telegramAuthMiddleware, TelegramController.getTasks);
+router.get('/get-user-balance',telegramAuthMiddleware, TelegramController.getUserBalance);
 router.post('/startTask',telegramAuthMiddleware, TelegramController.startTask);
 router.post('/claimTask',telegramAuthMiddleware, TelegramController.claimTask);
+router.get('/getReferral',telegramAuthMiddleware, TelegramController.getReferral);
 
 
 router.get("/vip/:userId", async (req, res) => {

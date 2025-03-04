@@ -344,6 +344,72 @@ const getMiningBonus = async (req, res) => {
 };
 
 
+
+const getUserBalance = async (req, res) => {
+    try {
+      let user = req.user;
+      if (!user) return res.status(404).json({ success: false, message: "User not found" });
+      let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+      if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
+        const userbalance = userDetail ? userDetail.userbalance : 0;
+        const miningBonus = await Income.sum("comm", {
+            where: {
+                user_id: userDetail.id,
+                remarks: "Mining Bonus",
+            },
+        });
+
+
+        const referralBonus = await Income.sum("comm", {
+            where: {
+                user_id: userDetail.id,
+                remarks: "Referral Bonus",
+            },
+        });
+
+            const task_bonus = await UserTask.sum("bonus", {
+                where: { telegram_id: user.telegram_id },
+            });
+
+            const taskBonus =  task_bonus || 0;
+
+      res.json({ success: true,userbalance,miningBonus,taskBonus,referralBonus });
+    } catch (error) {
+      console.error("Error in getTodayMiningBonus:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }   
+  };
+
+
+  const getReferral = async (req, res) => {
+    try {
+      let user = req.user;
+      if (!user) return res.status(404).json({ success: false, message: "User not found" });
+      let userDetail = await User.findOne({ where: { telegram_id:user.id } });
+      if (!userDetail) return res.status(404).json({ success: false, message: "User not found" });
+        const sponsor = await User.count("id", {
+            where: {
+                sponsor: userDetail.id,
+                active_status: "Active",
+            },
+        });
+
+
+        const referralBonus = await Income.sum("comm", {
+            where: {
+                user_id: userDetail.id,
+                remarks: "Referral Bonus",
+            },
+        });
+
+      res.json({ success: true,sponsor,referralBonus});
+    } catch (error) {
+      console.error("Error in getReferral:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }   
+  };
+
+
 const startTask = async (req, res) => {
     try {
         const { telegram_id, task_id } = req.body;
@@ -364,8 +430,10 @@ const startTask = async (req, res) => {
   const claimTask = async (req, res) => {
     try {
         const { telegram_id, task_id } = req.body;
+        let taskDetail = await Task.findOne({ where: { id:task_id } });
+        if (!taskDetail) return res.status(404).json({ success: false, message: "Task not found" });
 
-        await UserTask.update({ status: "completed" }, { where: { telegram_id, task_id } });
+        await UserTask.update({ status: "completed" , bonus:taskDetail.reward }, { where: { telegram_id, task_id  } });
 
         res.json({ message: "Task claimed successfully" });
 
@@ -378,7 +446,6 @@ const getTasks = async (req, res) => {
     try {
         const { telegram_id } = req.body;        
         const tasks = await Task.findAll({
-            where: { isTop: '0' }, // Example: Filtering tasks with status = 'active'
             include: [
               {
                 model: UserTask,
@@ -401,31 +468,8 @@ const getTasks = async (req, res) => {
           }));
 
 
-          const tasks2 = await Task.findAll({
-            where: { isTop: '1' }, // Example: Filtering tasks with status = 'active'
-            include: [
-              {
-                model: UserTask,
-                as: "userTasks",
-                where: { telegram_id },
-                required: false,
-              },
-            ],
-          });
-      
-          // Format response to include status
-          const formattedTasks2 = tasks2.map((task) => ({
-            id: task.id,
-            name: task.name,
-            reward: task.reward,
-            icon: task.icon,
-            link: task.link,
-            isTop: task.isTop,
-            status: task.userTasks?.length ? task.userTasks[0].status : "not_started",
-          }));
-
-          
-          res.json({topTask:formattedTasks2,buttonTask:formattedTasks});
+       
+          res.json({buttonTask:formattedTasks});
 
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -436,4 +480,4 @@ const getTasks = async (req, res) => {
   
 
 
-module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask};
+module.exports = { getUserByTelegramId,getTelegramHistory,startTrade, getLastTrade,fetchPoints,claimReward,updateTodayRoi,getMiningBonus,getTasks,startTask,claimTask,getUserBalance,getReferral};

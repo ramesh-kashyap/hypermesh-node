@@ -12,6 +12,10 @@ const UserTask = sequelize.define("UserTask", {
     type: DataTypes.BIGINT,
     allowNull: false,
   },
+  bonus: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
   task_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
