@@ -30,7 +30,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 // Security Middleware
 app.use(helmet());
 app.use(cors({
-    origin: "http://localhost:3000", // Adjust as needed
+    origin: "http://localhost:3001", // Adjust as needed
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
