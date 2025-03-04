@@ -13,7 +13,7 @@ const cron = require("node-cron");
 const AWS = require("aws-sdk");
 const { Server } = require("socket.io");
 const http = require("http");
-const { User, WalletModel,UserWalletModel, GasSponsorshipModel, Investment } = require("./models");
+const { User, WalletModel,UserWalletModel, GasSponsorshipModel, Investment,Graph } = require("./models");
 const { ethers } = require("ethers");
 const { TronWeb } = require("tronweb");
 

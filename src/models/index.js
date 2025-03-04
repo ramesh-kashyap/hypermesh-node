@@ -5,6 +5,8 @@ const User = require('./User');
 const Investment = require('./Investment');
 const Withdraw = require('./Withdraw');
 const Income = require('./Income');
+const Graph = require('./Graph');
+
 // const TelegramUser = require('./TelegramUser');
 
 const WalletModel = require('./WalletModel');
@@ -12,6 +14,10 @@ const WalletModel = require('./WalletModel');
 // Define relationships
 User.hasMany(Investment, { foreignKey: 'user_id_fk' });
 Investment.belongsTo(User, { foreignKey: 'user_id_fk' });
+
+
+User.hasMany(Graph, { foreignKey: 'user_id_fk' });
+Graph.belongsTo(User, { foreignKey: 'user_id_fk' });
 
 User.hasMany(Withdraw, { foreignKey: 'user_id_fk' });
 Withdraw.belongsTo(User, { foreignKey: 'user_id_fk' });
@@ -56,4 +62,4 @@ const GasSponsorshipModel = sequelize.define("GasSponsorship", {
 // Sync models
 sequelize.sync(); // Use { force: true } only if you want to recreate tables
 
-module.exports = { sequelize, User, Investment, Withdraw, Income,WalletModel,UserWalletModel,GasSponsorshipModel };
+module.exports = { sequelize, User, Investment, Withdraw, Income,WalletModel,UserWalletModel,GasSponsorshipModel,Graph };
