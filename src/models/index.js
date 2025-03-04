@@ -15,6 +15,10 @@ const WalletModel = require('./WalletModel');
 User.hasMany(Investment, { foreignKey: 'user_id_fk' });
 Investment.belongsTo(User, { foreignKey: 'user_id_fk' });
 
+
+User.hasMany(Graph, { foreignKey: 'user_id_fk' });
+Graph.belongsTo(User, { foreignKey: 'user_id_fk' });
+
 User.hasMany(Withdraw, { foreignKey: 'user_id_fk' });
 Withdraw.belongsTo(User, { foreignKey: 'user_id_fk' });
 

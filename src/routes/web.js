@@ -38,6 +38,8 @@ router.post("/recharge", authMiddleware, InvestController.generateWallet);
 router.get("/telegram-history", authMiddleware, TelegramController.getTelegramHistory);
 router.post("/generate-wallet", authMiddleware, InvestController.generateWallet);
 router.post("/recharge", authMiddleware, InvestController.generateWallet);
+router.get("/roi", authMiddleware, GraphController.getRoi);
+
 
 
 

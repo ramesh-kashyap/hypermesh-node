@@ -1,3 +1,4 @@
+const { Console } = require('winston/lib/winston/transports');
 const sequelize = require('../config/connectDB'); // Import Sequelize connection
 const { QueryTypes,Op } = require('sequelize');
 const TelegramUser = require("../models/TelegramUser");
@@ -64,28 +65,42 @@ const getUserByTelegramId = async (req, res) => {
 
 const getTelegramHistory = async (req, res) => {
     try {
-      
+        // लॉगिन किए हुए यूज़र की ID लें
+        const loggedInUserId = req.user && req.user.id;
+
+        if (!loggedInUserId) {
+            return res.status(401).json({
+                message: "Unauthorized: User not logged in",
+                status: false,
+                // timeStamp: new Date(),
+            });
+        }
+
+        // यूज़र टेबल से telegram_id प्राप्त करें और telegram_users टेबल में उसी telegram_id से match करें
         const telegramUsers = await sequelize.query(
-            `SELECT tu.* FROM telegram_users tu 
-             INNER JOIN users u ON tu.id = u.telegram_id`,
+            `SELECT tu.*
+             FROM telegram_users tu
+             INNER JOIN users u ON tu.telegram_id = u.telegram_id
+             WHERE u.id = :loggedInUserId`,
             {
+                replacements: { loggedInUserId },
                 type: QueryTypes.SELECT  
             }
         );
 
-        // If no data found
+        // अगर कोई डेटा नहीं मिला तो 404 रेस्पॉन्स भेजें
         if (telegramUsers.length === 0) {
             return res.status(404).json({
-                message: "No matching telegram users found",
+                message: "No matching telegram users found for the logged-in user",
                 status: false,
                 timeStamp: new Date(),
             });
         }
 
-
+        // सफल डेटा रेस्पॉन्स
         res.json({ success: true, data: telegramUsers });
     } catch (error) {
-        console.error("Error fetching filtered telegram users:", error.message, error.stack);
+        console.error("Error fetching telegram users:", error.message, error.stack);
         res.status(500).json({ error: error.message });
     }
 };
