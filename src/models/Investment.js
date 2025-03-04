@@ -7,9 +7,14 @@ const Investment = sequelize.define('Investment', {
     user_id_fk: { type: DataTypes.STRING, allowNull: false },
     amount: { type: DataTypes.STRING, allowNull: false },
     transaction_id: { type: DataTypes.STRING, allowNull: false },
+    payment_mode: { type: DataTypes.STRING, allowNull: false },
     status: { type: DataTypes.ENUM("Active", "Pending","Decline"), defaultValue: "Pending" },
     created_at: {
-        type: DataTypes.STRING,
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    sdate: {
+        type: DataTypes.DATE,
         allowNull: true,
     }
 }, {
